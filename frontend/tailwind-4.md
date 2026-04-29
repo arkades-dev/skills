@@ -11,6 +11,7 @@ appliesToFiles:
 docsBaseUrl: https://tailwindcss.com/docs
 llmsTxtUrl: https://tailwindcss.com/llms.txt
 cacheTtlHours: 24
+loadMode: lazy
 ---
 
 # Tailwind CSS 4

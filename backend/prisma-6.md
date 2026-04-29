@@ -11,6 +11,7 @@ appliesToFiles:
   - "**/db/**"
   - "**/prisma/**"
 docsBaseUrl: https://www.prisma.io/docs
+loadMode: lazy
 forgeNotes: |
   AI-driven destructive ops (`migrate reset`, `db push --force-reset`) are
   blocked unless `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION` is set with

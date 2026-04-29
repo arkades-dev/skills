@@ -2,34 +2,60 @@
   "version": 1,
   "items": [
     {
+      "id": "forge-code-hygiene",
+      "path": "foundation/forge-code-hygiene.md",
+      "version": "1.0.0",
+      "name": "Forge code hygiene",
+      "loadMode": "always"
+    },
+    {
+      "id": "typescript-strict",
+      "path": "foundation/typescript-strict.md",
+      "version": "1.0.0",
+      "name": "TypeScript strict",
+      "loadMode": "always"
+    },
+    {
+      "id": "security-baseline",
+      "path": "foundation/security-baseline.md",
+      "version": "1.0.0",
+      "name": "Security baseline",
+      "loadMode": "always"
+    },
+    {
       "id": "tailwind-4",
       "path": "frontend/tailwind-4.md",
       "version": "1.0.0",
-      "name": "Tailwind CSS 4"
+      "name": "Tailwind CSS 4",
+      "loadMode": "lazy"
     },
     {
       "id": "react-19",
       "path": "frontend/react-19.md",
       "version": "1.0.0",
-      "name": "React 19"
+      "name": "React 19",
+      "loadMode": "lazy"
     },
     {
       "id": "prisma-6",
       "path": "backend/prisma-6.md",
       "version": "1.0.0",
-      "name": "Prisma 6"
+      "name": "Prisma 6",
+      "loadMode": "lazy"
     },
     {
       "id": "hono",
       "path": "backend/hono.md",
       "version": "1.0.0",
-      "name": "Hono"
+      "name": "Hono",
+      "loadMode": "lazy"
     },
     {
       "id": "bun",
       "path": "runtime/bun.md",
       "version": "1.0.0",
-      "name": "Bun"
+      "name": "Bun",
+      "loadMode": "lazy"
     }
   ]
 }

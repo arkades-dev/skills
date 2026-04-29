@@ -10,6 +10,7 @@ appliesToFiles:
   - "bun.lock*"
   - "Dockerfile"
 docsBaseUrl: https://bun.sh/docs
+loadMode: lazy
 ---
 
 # Bun

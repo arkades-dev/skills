@@ -3,7 +3,13 @@
 //   2. id matches filename basename
 //   3. Body has a # H1 matching name, a > blockquote primer, and a
 //      ## Curated docs section
-//   4. index.json items match files on disk
+//   4. index.json items match files on disk (path, id, version, name, loadMode)
+//   5. Primer length capped per loadMode:
+//      - foundation (loadMode: always) → ≤600 chars (~150 tokens with margin)
+//      - domain     (loadMode: lazy)   → ≤1200 chars (~300 tokens)
+//   6. Anti-injection sweep on the primer body
+//   7. forgeNotes forbidden on foundation skills (they're inherently
+//      Forge-opinionated; the whole content IS the Forge note)
 //
 // Run locally: bun run scripts/validate.ts
 // CI:          .github/workflows/validate.yml
@@ -18,11 +24,35 @@ import { basename, extname } from "node:path"
 const SCHEMA_PATH = "schema.json"
 const INDEX_PATH = "index.json"
 
+const PRIMER_CAP_FOUNDATION = 600
+const PRIMER_CAP_DOMAIN = 1200
+
+// Hard-block patterns. These all attempt to override the worker's
+// system prompt or role. False-positive risk is low — none of these
+// phrases appear in legitimate framework documentation.
+const INJECTION_PATTERNS: Array<{ name: string; re: RegExp }> = [
+  {
+    name: "ignore-previous-instructions",
+    re: /ignore\s+(all\s+)?(previous|prior)\s+instructions/i,
+  },
+  {
+    name: "disregard-role",
+    re: /disregard\s+(your\s+)?(role|instructions|system\s+prompt)/i,
+  },
+  {
+    name: "you-are-now-unrestricted",
+    re: /you\s+are\s+now\s+(an?\s+)?(unrestricted|jailbroken|uncensored|dan|developer)/i,
+  },
+  { name: "forget-everything", re: /forget\s+(everything|all)/i },
+  { name: "fake-system-message", re: /^\s*system\s*[:>]\s*\w+/im },
+]
+
 interface IndexItem {
   id: string
   path: string
   version: string
   name: string
+  loadMode: "always" | "lazy"
 }
 interface IndexFile {
   version: number
@@ -35,13 +65,10 @@ async function main(): Promise<void> {
     process.exit(2)
   }
   const schema = JSON.parse(readFileSync(SCHEMA_PATH, "utf8")) as Record<string, unknown>
-  // Strip the $schema reference — ajv treats it as needing a registered
-  // meta-schema. We don't need it for runtime validation; the file is
-  // self-describing for editors.
   delete schema.$schema
   const index = JSON.parse(readFileSync(INDEX_PATH, "utf8")) as IndexFile
 
-  const ajv = new Ajv({ strict: true, allErrors: true })
+  const ajv = new Ajv({ strict: true, allErrors: true, useDefaults: true })
   addFormats(ajv)
   const validateFrontmatter = ajv.compile(schema)
 
@@ -61,10 +88,7 @@ async function main(): Promise<void> {
     try {
       parsed = matter(raw)
     } catch (err) {
-      onErr(
-        file,
-        `frontmatter parse failed: ${err instanceof Error ? err.message : err}`,
-      )
+      onErr(file, `frontmatter parse failed: ${err instanceof Error ? err.message : err}`)
       continue
     }
     const { data, content } = parsed
@@ -79,7 +103,10 @@ async function main(): Promise<void> {
       name: string
       version: string
       forgeNotes?: string
+      loadMode?: "always" | "lazy"
     }
+    // ajv applies the schema default; assert post-default.
+    const loadMode: "always" | "lazy" = fm.loadMode ?? "lazy"
 
     // 2. id matches filename basename.
     const expectedId = basename(file, extname(file))
@@ -89,17 +116,15 @@ async function main(): Promise<void> {
     }
 
     // 3a. # H1 matches name.
-    const h1Re = new RegExp(
-      `^# ${escapeRegex(fm.name)}\\s*$`,
-      "m",
-    )
+    const h1Re = new RegExp(`^# ${escapeRegex(fm.name)}\\s*$`, "m")
     if (!h1Re.test(content)) {
       onErr(file, `body must contain exactly "# ${fm.name}" (matching the name field)`)
       continue
     }
 
-    // 3b. > blockquote primer present.
-    if (!/^\s*>\s/m.test(content)) {
+    // 3b. > blockquote primer present, plus extract its content for length / anti-injection checks.
+    const primer = extractPrimer(content)
+    if (primer === null) {
       onErr(file, "body must contain a `>` blockquote primer at the top")
       continue
     }
@@ -110,10 +135,41 @@ async function main(): Promise<void> {
       continue
     }
 
-    console.log(`✓ ${file}`)
+    // 5. Primer length cap by loadMode.
+    const cap = loadMode === "always" ? PRIMER_CAP_FOUNDATION : PRIMER_CAP_DOMAIN
+    if (primer.length > cap) {
+      onErr(
+        file,
+        `primer is ${primer.length} chars; cap for loadMode="${loadMode}" is ${cap} chars (~${Math.round(cap / 4)} tokens)`,
+      )
+      continue
+    }
+
+    // 6. Anti-injection sweep on the primer.
+    for (const { name, re } of INJECTION_PATTERNS) {
+      if (re.test(primer)) {
+        onErr(
+          file,
+          `primer matches anti-injection pattern "${name}". Suspicious content blocked. If this is a legitimate framework reference, rephrase.`,
+        )
+        // Don't continue — keep checking other patterns to surface all issues.
+        break
+      }
+    }
+
+    // 7. Foundation skills must NOT have forgeNotes.
+    if (loadMode === "always" && fm.forgeNotes) {
+      onErr(
+        file,
+        `foundation skills (loadMode: always) cannot have forgeNotes — the whole skill IS the Forge convention. Move project-specific guidance into the primer or split into a separate domain skill.`,
+      )
+      continue
+    }
+
+    console.log(`✓ ${file} [${loadMode}, ${primer.length}ch primer]`)
   }
 
-  // 4. Index.json ↔ disk parity.
+  // 4. index.json ↔ disk parity.
   const indexedPaths = new Set(index.items.map((i) => i.path))
   const diskPaths = new Set(skillFiles)
 
@@ -128,12 +184,17 @@ async function main(): Promise<void> {
     }
   }
 
-  // 5. Index ids match frontmatter ids.
+  // Index frontmatter parity.
   for (const item of index.items) {
     if (!diskPaths.has(item.path)) continue
     const raw = readFileSync(item.path, "utf8")
     const { data } = matter(raw)
-    const fm = data as { id: string; version: string; name: string }
+    const fm = data as {
+      id: string
+      version: string
+      name: string
+      loadMode?: "always" | "lazy"
+    }
     if (fm.id !== item.id) {
       onErr(item.path, `index.json id "${item.id}" doesn't match frontmatter id "${fm.id}"`)
     }
@@ -149,6 +210,13 @@ async function main(): Promise<void> {
         `index.json name "${item.name}" doesn't match frontmatter name "${fm.name}"`,
       )
     }
+    const fmMode = fm.loadMode ?? "lazy"
+    if (fmMode !== item.loadMode) {
+      onErr(
+        item.path,
+        `index.json loadMode "${item.loadMode}" doesn't match frontmatter loadMode "${fmMode}"`,
+      )
+    }
   }
 
   if (errorCount > 0) {
@@ -156,6 +224,27 @@ async function main(): Promise<void> {
     process.exit(1)
   }
   console.log(`\nAll ${skillFiles.length} skill file(s) valid.`)
+}
+
+// Extract the primer = the leading `>` blockquote (contiguous lines
+// starting with `>`). Returns the concatenated content with `> `
+// markers stripped, or null if no blockquote is found.
+function extractPrimer(body: string): string | null {
+  const lines = body.split("\n")
+  // Skip the leading H1 + any blank lines.
+  let i = 0
+  while (i < lines.length && (lines[i].trim() === "" || /^# /.test(lines[i]))) {
+    i += 1
+  }
+  // Now we should be at the first content line. If it's not a `>` line,
+  // no primer.
+  const primerLines: string[] = []
+  while (i < lines.length && /^\s*>/.test(lines[i])) {
+    primerLines.push(lines[i].replace(/^\s*>\s?/, ""))
+    i += 1
+  }
+  if (primerLines.length === 0) return null
+  return primerLines.join("\n").trim()
 }
 
 function escapeRegex(s: string): string {

@@ -11,6 +11,7 @@ appliesToFiles:
   - "src/index.ts"
 docsBaseUrl: https://hono.dev/docs
 llmsTxtUrl: https://hono.dev/llms.txt
+loadMode: lazy
 ---
 
 # Hono

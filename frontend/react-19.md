@@ -8,6 +8,7 @@ appliesToFiles:
   - "**/*.tsx"
   - "**/*.jsx"
 docsBaseUrl: https://react.dev/reference/react
+loadMode: lazy
 ---
 
 # React 19

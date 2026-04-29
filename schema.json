@@ -56,7 +56,13 @@
     "forgeNotes": {
       "type": "string",
       "maxLength": 1500,
-      "description": "Optional Forge-specific overlay. The server appends this to the worker's system prompt after the primer. Use for project-specific conventions that aren't in the upstream docs."
+      "description": "Optional Forge-specific overlay. The server appends this to the worker's system prompt after the primer. Use for project-specific conventions that aren't in the upstream docs. NOT allowed on foundation skills (they're inherently Forge-opinionated)."
+    },
+    "loadMode": {
+      "type": "string",
+      "enum": ["always", "lazy"],
+      "default": "lazy",
+      "description": "How the worker accesses this skill. 'always' = primer inlined into every task's system prompt (foundation skills: code style, AI hygiene, security baseline). 'lazy' = primer loaded on demand via use_skill(id) tool (domain skills: framework-specific knowledge). Foundations have stricter primer caps (≤600 chars) since they compound across all installed skills."
     }
   }
 }
