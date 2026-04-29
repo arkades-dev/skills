@@ -1,0 +1,26 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install validator deps
+        run: bun add ajv ajv-formats gray-matter glob @types/node
+
+      - name: Validate skills
+        run: bun run scripts/validate.ts
+
+      - name: Summary
+        if: always()
+        run: echo "Validation complete."

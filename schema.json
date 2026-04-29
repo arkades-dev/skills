@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Arkades Skill Frontmatter",
+  "description": "Strict frontmatter contract for skill files in arkades/skills. Validated by CI on every PR.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "version", "appliesToWorkerTypes", "docsBaseUrl"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,60}[a-z0-9]$",
+      "description": "Kebab-case identifier; must match the filename basename."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Human-readable display name. Must match the body's # H1."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Skill content version in semver. Bump on material content/format change. Independent of the framework version."
+    },
+    "appliesToWorkerTypes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "UI hint — which worker types the picker recommends this for. Soft (worker still installable on others)."
+    },
+    "appliesToFiles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Optional. Glob patterns the skill is relevant for; the picker shows them as 'applies to' chips."
+    },
+    "docsBaseUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://",
+      "description": "HTTPS base URL for the framework's docs. fetch_docs resolves relative paths against this."
+    },
+    "llmsTxtUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://",
+      "description": "Optional. Upstream's own llms.txt URL. The pack's curated docs index is independent of this; both can coexist."
+    },
+    "cacheTtlHours": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 168,
+      "description": "Optional cache TTL override (default 24h). Use shorter for fast-moving frameworks."
+    },
+    "forgeNotes": {
+      "type": "string",
+      "maxLength": 1500,
+      "description": "Optional Forge-specific overlay. The server appends this to the worker's system prompt after the primer. Use for project-specific conventions that aren't in the upstream docs."
+    }
+  }
+}
