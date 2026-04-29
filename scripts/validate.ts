@@ -166,7 +166,33 @@ async function main(): Promise<void> {
       continue
     }
 
-    console.log(`✓ ${file} [${loadMode}, ${primer.length}ch primer]`)
+    // 8. enforcementRules: compile each pattern as a real RegExp to
+    //    catch syntax errors before they reach the runtime. A bad
+    //    regex would crash the server's ChangeSet scanner.
+    const rules = (data as { enforcementRules?: Array<{ pattern: string; message: string }> })
+      .enforcementRules
+    if (Array.isArray(rules)) {
+      let ruleErr = false
+      for (const [idx, rule] of rules.entries()) {
+        try {
+          // We use the regex globally + multiline (server runs them
+          // across multiple files joined; consistent with future runtime).
+          new RegExp(rule.pattern, "gm")
+        } catch (err) {
+          onErr(
+            file,
+            `enforcementRules[${idx}].pattern is not a valid regex: ${err instanceof Error ? err.message : err}`,
+          )
+          ruleErr = true
+        }
+      }
+      if (ruleErr) continue
+    }
+
+    const ruleSummary = Array.isArray(rules) && rules.length > 0
+      ? `, ${rules.length} rule${rules.length === 1 ? "" : "s"}`
+      : ""
+    console.log(`✓ ${file} [${loadMode}, ${primer.length}ch primer${ruleSummary}]`)
   }
 
   // 4. index.json ↔ disk parity.

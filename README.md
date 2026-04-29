@@ -59,6 +59,31 @@ A skill file:
 - Foundations (`loadMode: always`) **MUST NOT** have `forgeNotes` — the whole skill IS the Forge convention.
 - Foundation primers are capped at **600 chars** (~150 tokens). Domain primers at **1200 chars** (~300 tokens). Counted on blockquote content with `>` markers stripped.
 
+## Enforcement rules — output-time verification
+
+A primer is a **nudge**. Models follow imperative system-prompt rules at ~60–80% adherence — better than nothing, but the remaining 20–40% leak. To close that gap, skills can declare `enforcementRules` in frontmatter:
+
+```yaml
+enforcementRules:
+  - pattern: 'forwardRef\s*[<(]'
+    message: "React 19 uses ref-as-prop. Rewrite without forwardRef."
+    severity: error                    # default; "warning" also valid
+```
+
+The server runs each rule's regex against every file the worker emits in a ChangeSet. On match (severity: error), the runtime fires a fix iteration — the worker gets the message back as tool feedback and retries, just like M11's typecheck loop. Severity `warning` logs but doesn't gate output.
+
+**When to write a rule:**
+- The pattern unambiguously identifies the wrong thing. `forwardRef` in a `.tsx` file is always wrong on React 19; `@apply` is always wrong on Tailwind 4.
+- The message tells the worker what to do INSTEAD, not just "don't."
+
+**When to skip a rule:**
+- False-positive risk is non-trivial. E.g., `npm install` could appear in package.json scripts (legit) or worker code (wrong) — context matters, regex doesn't catch it. **A false positive loops the worker indefinitely.**
+- The pattern isn't a clear violation. "Use semantic HTML" can't be regex'd; that's primer territory.
+
+Cap: 10 rules per skill. Pattern length ≤ 200 chars. Message length ≤ 240 chars. Validator compiles each pattern as a real `RegExp` to catch syntax errors at PR time — server crashes on a bad regex would be catastrophic.
+
+**Runtime status:** the schema field and validator land in this PR; the server-side scanner integrates into M11's fix loop incrementally. Skills can declare rules today; they activate as the runtime rolls out.
+
 ## Anti-injection sweep
 
 Validation rejects PRs whose primers match patterns commonly used in prompt injection attempts:

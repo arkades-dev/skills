@@ -12,28 +12,34 @@ docsBaseUrl: https://tailwindcss.com/docs
 llmsTxtUrl: https://tailwindcss.com/llms.txt
 cacheTtlHours: 24
 loadMode: lazy
+enforcementRules:
+  - pattern: '@apply\s'
+    message: "Tailwind 4 removed `@apply`. Use utility classes directly in JSX, or extract a component."
+  - pattern: '@import\s+["'']tailwindcss/(base|components|utilities)["'']'
+    message: "Tailwind 4 uses a single `@import \"tailwindcss\";` import — drop the v3 base/components/utilities split."
+  - pattern: 'theme\s*:\s*\{\s*extend\s*:'
+    message: "Tailwind 4 has no JS config. Move theme tokens into a `@theme {}` CSS block."
 ---
 
 # Tailwind CSS 4
 
-> **Tailwind 4** is a breaking release from v3, and models trained on
-> v3 examples reflexively generate v3 patterns. Override these defaults:
+> **Tailwind 4** — override v3 reflexes:
 >
-> 1. **NO `tailwind.config.js`.** Config moved to CSS:
->    ```css
->    @theme {
->      --color-primary: oklch(70% 0.15 145);
->      --font-sans: "Inter", sans-serif;
->    }
->    ```
-> 2. **Single import**: `@import "tailwindcss";` — NOT the v3 trio of
->    base/components/utilities imports.
-> 3. **`@apply` was REMOVED.** Use utility classes directly in JSX, or
->    extract into components. Don't generate `@apply` directives.
-> 4. **Use `@tailwindcss/vite` plugin** (already wired in the default
->    scaffold). NOT PostCSS + Autoprefixer + tailwindcss as separate steps.
-> 5. **Dark mode**: toggle `.dark` class on `<html>`. Use `dark:` variants
->    in classes (`bg-white dark:bg-zinc-900`).
+> 1. **CSS-first config** (NOT `tailwind.config.js`):
+>    ✅ `@theme { --color-primary: oklch(70% 0.15 145); }` in CSS
+>    ❌ `module.exports = { theme: { extend: {} } }` in JS
+>
+> 2. **Single import** (NOT three v3 imports):
+>    ✅ `@import "tailwindcss";`
+>    ❌ `@import "tailwindcss/base";` + `/components` + `/utilities`
+>
+> 3. **Utility classes directly** (NOT `@apply`):
+>    ✅ `<div className="bg-zinc-900 p-4">`
+>    ❌ `.card { @apply bg-zinc-900 p-4; }`
+>
+> 4. **`@tailwindcss/vite` plugin** (NOT PostCSS+Autoprefixer).
+>
+> 5. **Dark mode**: `.dark` on `<html>`, `dark:` variants in classes.
 
 ## Curated docs
 
@@ -42,7 +48,6 @@ loadMode: lazy
 - [Upgrade guide](/upgrade-guide): Differences from v3 — what was removed, what was renamed.
 - [Dark mode](/dark-mode): Class-based vs media-query-based.
 - [Adding custom styles](/adding-custom-styles): @utility vs @layer in v4.
-
-## Upstream
-
-- [Tailwind 4 llms.txt](https://tailwindcss.com/llms.txt): The full upstream index for deeper exploration.
+- [Responsive design](/responsive-design): Breakpoint variants (sm:, md:, etc.) and arbitrary values.
+- [Hover, focus, and other states](/hover-focus-and-other-states): All variant prefixes.
+- [Tailwind llms.txt](https://tailwindcss.com/llms.txt): Upstream's curated index — fetch when you need something not in the list above.

@@ -16,22 +16,22 @@ loadMode: lazy
 
 # Hono
 
-> **Hono** is an ultra-fast web framework for Bun, Cloudflare Workers,
-> Node, and Deno. Lightweight, zero-dep, TS-first.
+> **Hono** — ultra-fast web framework for Bun, Cloudflare Workers, Node, Deno. Override Express/Fastify reflexes:
 >
-> 1. **Context object**: middleware/handlers receive `c`. Use
->    `c.req.json()`, `c.req.param("id")`, `c.req.query()`. Reply with
->    `c.json(data)`, `c.text("...")`, `c.html(...)`.
-> 2. **Routing**: `app.get(path, ...middlewares, handler)`. Middlewares
->    chain via varargs.
-> 3. **Bun runtime**: `export default app` — Bun's serve picks up
->    `fetch`. WebSockets via the `hono/bun` adapter.
-> 4. **`hono/jsx` is server-rendering JSX, NOT React.** Don't import
->    React in Hono routes; use `c.html(<Page />)`.
-> 5. **RPC**: `hc<typeof app>(baseUrl)` builds a type-safe client from
->    your route definitions — no codegen needed.
-> 6. **Validators**: use `@hono/zod-validator` (`zValidator`) for typed
->    request validation. Don't roll custom parsers.
+> 1. **Context object `c`** (NOT separate req/res):
+>    ✅ `app.get("/x", (c) => c.json({ ok: true }))`
+>    ✅ `c.req.json()`, `c.req.param("id")`, `c.req.query()`
+>    ❌ `(req, res) => res.json(...)` (Express pattern)
+>
+> 2. **Routing**: `app.get(path, ...mw, handler)` — middlewares chain via varargs.
+>
+> 3. **Bun runtime**: `export default app` — Bun's serve picks up `fetch`. WebSockets via `hono/bun` adapter.
+>
+> 4. **`hono/jsx` is server-rendering JSX, NOT React.** Don't import React in Hono routes; use `c.html(<Page />)`.
+>
+> 5. **RPC**: `hc<typeof app>(baseUrl)` builds a type-safe client from your route definitions — no codegen needed.
+>
+> 6. **Validators**: use `@hono/zod-validator` (`zValidator`) for typed request validation. Don't roll custom parsers.
 
 ## Curated docs
 
@@ -42,7 +42,5 @@ loadMode: lazy
 - [RPC](/guides/rpc): Type-safe client from route definitions.
 - [Bun adapter](/getting-started/bun): Running Hono on Bun.
 - [Validation](/guides/validation): zValidator and friends.
-
-## Upstream
-
-- [Hono llms.txt](https://hono.dev/llms.txt): The full upstream index.
+- [Testing](/guides/testing): Built-in testing helpers.
+- [Hono llms.txt](https://hono.dev/llms.txt): Upstream's curated index — fetch when you need something not in the list above.

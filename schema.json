@@ -63,6 +63,37 @@
       "enum": ["always", "lazy"],
       "default": "lazy",
       "description": "How the worker accesses this skill. 'always' = primer inlined into every task's system prompt (foundation skills: code style, AI hygiene, security baseline). 'lazy' = primer loaded on demand via use_skill(id) tool (domain skills: framework-specific knowledge). Foundations have stricter primer caps (≤600 chars) since they compound across all installed skills."
+    },
+    "enforcementRules": {
+      "type": "array",
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pattern", "message"],
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "JS-compatible regex applied to every file's content in the worker's ChangeSet. Use single-quoted YAML strings to avoid escape issues. Keep narrow — a false-positive blocks output."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240,
+            "description": "Explanation surfaced to the worker on match. Imperative; tells them what to do instead. Becomes part of the next-iteration tool-feedback message."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning"],
+            "default": "error",
+            "description": "'error' triggers a fix iteration in M11's loop. 'warning' is logged but doesn't gate output. Default 'error'."
+          }
+        }
+      },
+      "description": "Optional. Post-ChangeSet output enforcement: server scans every file the worker emitted, fires a fix iteration if any rule's pattern matches. Only write rules where false-positive risk is near-zero — false positives loop the worker indefinitely. Skip if a regex has any context-dependence (e.g., 'npm install' in a script vs. in docs)."
     }
   }
 }
