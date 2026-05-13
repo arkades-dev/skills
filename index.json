@@ -23,6 +23,34 @@
       "loadMode": "always"
     },
     {
+      "id": "stack-conventions",
+      "path": "foundation/stack-conventions.md",
+      "version": "0.1.0",
+      "name": "Stack Conventions",
+      "loadMode": "always"
+    },
+    {
+      "id": "component-patterns",
+      "path": "foundation/component-patterns.md",
+      "version": "0.1.0",
+      "name": "Component Patterns",
+      "loadMode": "always"
+    },
+    {
+      "id": "anti-patterns",
+      "path": "foundation/anti-patterns.md",
+      "version": "0.1.0",
+      "name": "Anti-patterns",
+      "loadMode": "always"
+    },
+    {
+      "id": "presentation",
+      "path": "frontend/presentation.md",
+      "version": "0.1.0",
+      "name": "Presentations & decks",
+      "loadMode": "lazy"
+    },
+    {
       "id": "tailwind-4",
       "path": "frontend/tailwind-4.md",
       "version": "1.0.0",
